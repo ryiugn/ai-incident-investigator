@@ -1,0 +1,11 @@
+{
+  "version": "experiment-v1",
+  "split": "held_out",
+  "repeats": 3,
+  "seed": 913,
+  "provider": "anthropic",
+  "model": "claude-haiku-4-5-20251001",
+  "rubric_version": "v1",
+  "limits": {"tool_dispatches":8,"model_requests":10,"input_tokens":30000,"output_tokens":5000,"seconds":90},
+  "findings_status": "PENDING: credentials, approved spending ceiling, development pilot and human label audit"
+}

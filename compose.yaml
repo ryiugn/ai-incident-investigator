@@ -1,0 +1,41 @@
+name: ai-incident-investigator
+services:
+  db:
+    image: postgres:17.6
+    environment:
+      POSTGRES_USER: investigator_demo
+      POSTGRES_PASSWORD: local_demo_only
+      POSTGRES_DB: orders
+    ports: ["127.0.0.1:55432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U investigator_demo -d orders"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  shipping:
+    build:
+      context: .
+      dockerfile: environment/Dockerfile
+    command: ["uvicorn", "environment.shipping:app", "--host", "0.0.0.0", "--port", "8001"]
+    ports: ["127.0.0.1:18081:8001"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  orders:
+    build:
+      context: .
+      dockerfile: environment/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://investigator_demo:local_demo_only@db:5432/orders
+      SHIPPING_URL: http://shipping:8001
+    ports: ["127.0.0.1:18080:8000"]
+    depends_on:
+      db: {condition: service_healthy}
+      shipping: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 2s
+      timeout: 2s
+      retries: 40

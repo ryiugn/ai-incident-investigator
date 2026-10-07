@@ -1,0 +1,8 @@
+FROM python:3.12-slim
+WORKDIR /runtime
+COPY requirements.lock.txt /runtime/requirements.lock.txt
+RUN pip install --no-cache-dir -r requirements.lock.txt
+COPY src/investigator /runtime/investigator
+ENV LANGSMITH_TRACING=false LANGCHAIN_TRACING_V2=false PYTHONDONTWRITEBYTECODE=1
+USER 65534:65534
+ENTRYPOINT ["python", "-m", "investigator.worker"]
