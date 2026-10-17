@@ -52,3 +52,21 @@ rate are software measures; semantic correctness and claim support need actual r
 Solo-author knowledge, short captures, synthetic faults and the small local system
 limit external validity. Public run comparisons show compatible evidence and usage,
 not private-label correctness or an automatic winner.
+
+## Completion gates
+
+Keep the following statuses separate: software verified; provider integration verified;
+labels audited; development reports reviewed; configuration frozen; held-out experiment
+authorized/executed; held-out reports reviewed. A successful scripted demo satisfies
+none of the semantic-review gates. Recorded playback improves inspection, not accuracy.
+
+For each batch, use manifest rows as the scheduled denominator. A missing result file
+is a failure, not permission to drop the row or release its unknown-usage reservation.
+The supplied held-out design schedules 20 variants × 2 workflows × 3 repeats = 120
+investigations, nested within capture groups. Report per-arm outcomes, grouped paired
+uncertainty, cost/latency, missing reviews and failures without assuming adaptive wins.
+
+Do not freeze settings as final until development review is complete. Preserve source,
+prompt, model, contract, limits, evidence-policy, dependency and corpus identities.
+Held-out spending requires its own authorization; development allowances do not extend
+to it. An author who knows the synthetic fault recipes must disclose that limitation.

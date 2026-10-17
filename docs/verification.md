@@ -1,4 +1,50 @@
-# Verification — 7 October 2026
+# Verification
+
+## Local continuation — 17 October 2026
+
+The candidate starts from public commit `0a283af`, which was checked against the current
+remote. Original development data and the published checkout were preserved. The
+candidate reused installed locked Python/UI dependencies; a new dependency installation
+was not claimed. Tests imported candidate source and used separate writable temporary
+directories, archives and an unpaid local server.
+
+| Check | Current result |
+|---|---|
+| Full Python suite | **141 passed, 6 opt-in live checks skipped** (55.48 seconds) |
+| Isolated real Docker HTTP/PostgreSQL fault and trace checks | **6 passed** (12.96 seconds); task test containers removed afterward |
+| Dependency consistency | No broken requirements |
+| TypeScript and Vite production build | Passed |
+| Playwright on the unpaid local server | **19 passed** (33.7 seconds), including playback, evidence switching, approval and legacy interrupted state |
+| Unpaid CLI | Diagnosis and missing-evidence abstention completed with zero API spend |
+| Recorded execution | Fixed, standalone adaptive, durable approval/restart, legacy defaults and decision provenance tested |
+| Crash behavior | Unknown dispatch does not become a completed step; reservation/replay tests pass |
+| Review | Independent targeted review found stale evidence and retained-decision labeling issues; both fixed and regression-tested; subsequent targeted review clear |
+| Real-provider operation | After two fixed request failures, one fixed and one adaptive handcrafted-demo run reached Anthropic and returned validated insufficient-evidence reports. Adaptive stopped at its input budget. This is integration evidence, not a diagnostic-quality result |
+
+Earlier verification exposed a polling race and a timeout test whose whole-run deadline
+could expire before provider dispatch. The poll now guards newer state/object changes;
+the timeout test gives collection headroom while preserving the short provider deadline.
+Initial Windows temp-directory permission errors were resolved using an isolated test
+directory. These failures were investigated rather than counted as passing runs.
+
+No label audit or semantic evaluation was fabricated. Current provider failure does not
+erase historical successes, and historical successes do not verify this configuration.
+
+The successful fixed run made one model request and six tool dispatches (6,040 input /
+129 output tokens, estimated $0.006685). Adaptive made four model requests including
+one repair and two tool dispatches (18,983 input / 1,126 output tokens, estimated
+$0.024613). It stopped at `input_budget` and finalized an insufficient-evidence report.
+Both reports described missing metric coverage. These two handcrafted-demo runs have
+not received a complete human semantic audit, and do not establish a workflow winner.
+
+Across all four attempted runs, two failed before usable model output and two returned
+validated reports. The ledger retains $0.041056 for unknown usage from the failures;
+together with $0.031298 estimated from returned usage it records $0.072354 against an
+unchanged $0.11 ceiling. These values are not an account billing statement. Successful
+requests followed a credential restart after workspace-scope guidance; that sequence
+does not prove the precise cause of the earlier HTTP 400.
+
+## Previous public release — 7 October 2026
 
 Fresh checks were run against the clean public copy on Windows with Python 3.12.14,
 Node 22.20.0 and npm 10.9.3. A new virtual environment was installed from the Python

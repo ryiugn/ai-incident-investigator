@@ -32,6 +32,36 @@ and provider. Refresh, select the pending Recent run, and inspect the exact quer
 Approve exact query to continue. Start another run and try Decline and finalize.
 Workflow shows the selected run's recorded node path. Waiting does not use active time.
 
+## Follow recorded execution
+
+Open Workflow and select a saved run. Use Recorded step and Previous/Next (keyboard
+Tab/Enter works) to inspect received evidence counts, decision provenance, outgoing
+route, new evidence, hypotheses and budget changes. Expand Query and tool outcomes to
+see exact arguments, returned IDs, coverage and missing intervals. Open a step's evidence
+and use Back to recorded step to return focus. Report/timeline links refer to this run.
+
+Highlights show completed boundaries up to the selected step, not live activity. A
+paused approval has separate run status and links to the exact approval controls.
+Unknown outcomes remain incomplete and non-resumable. Older runs explicitly lack
+step details. Fixed runs show the ordinary six-query checklist rather than pretending
+they used adaptive LangGraph nodes. The comparison panel can inspect compatible saved
+pairs without inferring which workflow is better.
+
+## Optional real-provider demonstration
+
+Follow README configuration with a direct Anthropic key in a server-side environment,
+an explicit ceiling and a persistent ledger. Never send a key through the browser or
+reset a ledger to gain allowance. Use a separate archive/port from browser tests.
+Confirm `/api/config` says `paid: true` and the intended provider before starting.
+
+Run the same handcrafted demo once with Fixed and once with Adaptive. Inspect returned
+usage, termination reason, validation status and citations. Stop on an authentication,
+endpoint or uncertain-outcome error; do not assume retries are free. Retain failures.
+This verifies provider integration only. It is neither a development benchmark nor a
+held-out experiment. For a timed interview, keep the unpaid server available as fallback.
+
+See [interview.md](interview.md) for the timed walkthrough and explanation prompts.
+
 ## Other controls
 
 Recent runs reopens saved investigations. Five Handcrafted stress fixtures illustrate

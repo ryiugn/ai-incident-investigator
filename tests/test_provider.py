@@ -1,6 +1,41 @@
 import pytest
 
 
+async def test_provider_error_diagnostic_retains_only_safe_status(tmp_path):
+    import json
+    from types import SimpleNamespace
+    from investigator.provider import AnthropicProvider
+    from investigator.contracts import Report
+    class Rejected(Exception):
+        status_code=401
+        body={'error':{'type':'authentication_error','message':'secret credential and raw response body'}}
+    class Messages:
+        async def create(self,**kwargs):raise Rejected('secret credential and raw response body')
+    ledger=tmp_path/'spend.json'
+    provider=AnthropicProvider(api_key='unused',approved_budget_usd=1,ledger_path=ledger)
+    provider.client=SimpleNamespace(messages=Messages())
+    with pytest.raises(Rejected):await provider.respond({'evidence':[]},Report,1000,20)
+    diagnostic=ledger.with_suffix('.error.json')
+    assert diagnostic.exists()
+    value=json.loads(diagnostic.read_text())
+    assert value['category']=='authentication' and value['http_status']==401
+    assert 'secret' not in diagnostic.read_text() and 'raw response' not in diagnostic.read_text()
+    assert json.loads(ledger.read_text())['reserved_or_spent']>0
+
+
+def test_safe_diagnostic_classifies_schema_rejection_without_copying_message(tmp_path):
+    import json
+    from investigator.provider import AnthropicProvider
+    class Rejected(Exception):
+        status_code=400
+        body={'error':{'message':'output_config schema unsupported: secret arbitrary echoed input'}}
+    provider=AnthropicProvider(api_key='unused',approved_budget_usd=1,ledger_path=tmp_path/'ledger.json')
+    provider.record_error(Rejected())
+    raw=(tmp_path/'ledger.error.json').read_text()
+    assert json.loads(raw).get('reason')=='structured_output_schema'
+    assert 'secret' not in raw and 'echoed' not in raw
+
+
 @pytest.fixture(autouse=True)
 def clean_provider_environment(monkeypatch):
     monkeypatch.delenv('ANTHROPIC_BASE_URL',raising=False)

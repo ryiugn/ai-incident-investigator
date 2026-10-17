@@ -76,6 +76,13 @@ order is separate; temporal proximity alone cannot establish causation.
 
 ## Scope limitations
 
+Workflow now exposes completed node boundaries and fixed checklist steps, including
+actual routes, evidence inputs, outcomes, decision provenance and state changes. Links
+lead to run-scoped evidence, report citations, hypotheses and the UTC timeline. Playback
+is collection order; the timeline is observation time. See [LangGraph](langgraph.md).
+The records add local serialization overhead. This remains a bounded local workbench,
+not a streaming distributed tracing service. Historical missing metadata stays missing.
+
 No production authentication, accounts, streaming, background live monitoring or
 remediation. Captures are short and synthetic. Trace buffers are bounded and local;
 cutoff overlap, in-flight work, missing parents, unavailable services, overflow and

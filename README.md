@@ -20,10 +20,14 @@ tradeoffs. It is not a production incident-response service.
 - Enforces query, token, time and local spending limits.
 - Saves interactive adaptive investigations in SQLite, including exact-query approvals.
 - Shows hypotheses, a UTC event timeline, evidence details and comparable run usage.
+- Explains LangGraph through recorded steps, actual routes, state changes and evidence links.
 - Supports human atomic-claim review, draft persistence and explicit final attestation.
 
 It suggests next checks; it does not execute remediation. Citation integrity is checked
 in code; whether a source actually supports a claim requires separate human review.
+
+See the [interview walkthrough](docs/interview.md), [demo guide](docs/demo.md), and
+[verification record](docs/verification.md) for a reproducible portfolio demonstration.
 
 ## Quick start
 

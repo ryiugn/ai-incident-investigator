@@ -1,5 +1,11 @@
 # Configuration and data handling
 
+On provider request failure, a persistent ledger also writes a sibling `.error.json`
+containing only an allowlisted category/reason, numeric HTTP status, model and UTC observation
+time. It excludes raw exception text, response bodies, headers and credentials. Unknown
+usage reservations remain in the spending ledger. HTTP 400 alone does not establish
+whether the cause is account credit, request validation or another precondition.
+
 The web app runs locally and binds to `127.0.0.1`. Hosted means the language model is
 remote; it does not mean this application is a public hosted service.
 
@@ -23,7 +29,8 @@ placeholder reference, not an automatically loaded configuration file. A non-off
 
 The pinned model is `claude-haiku-4-5-20251001`. Its base input/output price is $1/$5 per
 million tokens according to [Anthropic's model documentation](https://platform.claude.com/docs/en/models/haiku-4-5/overview),
-checked 7 October 2026. Availability in a particular user's account was not tested.
+checked 7 October 2026. Two handcrafted-demo runs verified this model's availability
+in the development account on 17 October 2026; other accounts may differ.
 Recheck model pricing and the adapter's accounting before future paid use.
 
 ## What leaves the machine
@@ -54,6 +61,10 @@ automation or tests at a hosted server: clicking Start there can spend money.
 
 ## Troubleshooting
 
+- Key workspace scope: use a key scoped to one workspace (such as Default) in the
+  organization with API credit. Multi-workspace keys require an explicit
+  `anthropic-workspace-id` header, which this adapter does not configure. See
+  [Anthropic's key setup guidance](https://platform.claude.com/docs/en/get-api-key).
 - Missing key/zero ceiling: set your own key and choose a positive ceiling.
 - Endpoint rejected: remove an unintended custom `ANTHROPIC_BASE_URL`; this adapter
   supports the official service only.

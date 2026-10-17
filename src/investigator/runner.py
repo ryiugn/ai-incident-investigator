@@ -17,6 +17,7 @@ class RunContext:
         self.provider, self.budget = provider, Budget(limits)
         self.run_id = uuid.uuid4().hex
         self.events, self.nodes, self.prompts = [], [], []
+        self.execution_steps = []
         self.supplied, self.cache = set(), {}
         self.no_progress, self.reason = 0, 'report'
         self.decision, self.report = None, None
@@ -165,12 +166,17 @@ async def run_investigation(case, provider, archive=None, minimal=False, workflo
             from .graph import build_graph
             await build_graph(ctx).ainvoke({'route':'triage'}, config={'recursion_limit':64})
         else:
+            from .execution import begin, complete
             try:
                 for request in schedule(ctx.alert, minimal, ctx.telemetry.window):
+                    boundary = begin(ctx)
                     await ctx.dispatch(request)
+                    complete(ctx, 'fixed_query', 'fixed_checklist', boundary)
             except Exhausted as error:
                 ctx.reason = str(error)
+            boundary = begin(ctx)
             await ctx.finalize()
+            complete(ctx, 'finalize', 'end', boundary)
     except asyncio.CancelledError:
         ctx.reason = 'cancelled'; ctx.fallback()
     except Exception:
@@ -178,6 +184,7 @@ async def run_investigation(case, provider, archive=None, minimal=False, workflo
     result = dict(run_id=ctx.run_id, workflow=workflow, provider=provider.name,
         report=ctx.report.model_dump(mode='json'), termination_reason=ctx.reason,
         evidence=ctx.telemetry.registry.export(), events=ctx.events, nodes=ctx.nodes,
+        execution_steps=ctx.execution_steps,
         usage=ctx.budget.finish(), prompts=ctx.prompts, limits=ctx.budget.limits.model_dump(),
         snapshot_hash=digest(case['telemetry_snapshot']), schema_version=1)
     result.update(hypotheses=ctx.hypotheses, hypothesis_history=ctx.hypothesis_history)

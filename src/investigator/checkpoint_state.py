@@ -50,7 +50,7 @@ def restore(state, provider, adapter_factory):
     ctx.run_id = state['run_id']
     for name in ('events','nodes','prompts','cache','no_progress','reason'):
         setattr(ctx, name, deepcopy(state[name]))
-    for name in ('hypotheses','hypothesis_history'):
+    for name in ('hypotheses','hypothesis_history','execution_steps'):
         setattr(ctx, name, deepcopy(state.get(name, [])))
     ctx.supplied = set(state['supplied'])
     ctx.decision = Decision.model_validate(state['decision']) if state['decision'] else None
@@ -65,6 +65,7 @@ def capture(ctx, previous):
     state = deepcopy(previous)
     state.update({name:deepcopy(getattr(ctx,name)) for name in ('events','nodes','prompts','cache','no_progress','reason')})
     state.update(hypotheses=deepcopy(ctx.hypotheses), hypothesis_history=deepcopy(ctx.hypothesis_history))
+    state['execution_steps'] = deepcopy(ctx.execution_steps)
     state.update(evidence=ctx.telemetry.registry.export(), supplied=sorted(ctx.supplied),
                  decision=ctx.decision.model_dump(mode='json') if ctx.decision else None,
                  report=ctx.report.model_dump(mode='json') if ctx.report else None,
@@ -80,6 +81,7 @@ def result(state):
                 events=state['events'], nodes=state['nodes'], usage=state['usage'],
                 limits=state['limits'], snapshot_hash=state['snapshot_hash'], frozen_snapshot_hash=state['snapshot_hash'], schema_version=1)
     value.update(hypotheses=deepcopy(state.get('hypotheses', [])),
+                 execution_steps=deepcopy(state.get('execution_steps', [])),
                  hypothesis_history=deepcopy(state.get('hypothesis_history', [])))
     from .timeline import build_timeline
     value['timeline'] = build_timeline(value)

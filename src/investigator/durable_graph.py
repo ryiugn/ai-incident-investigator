@@ -7,6 +7,7 @@ from . import checkpoint_state as data
 from .contracts import Decision, ToolRequest
 from .budgets import Exhausted
 from .evidence import digest
+from .execution import begin, complete
 
 
 class DurableState(TypedDict):
@@ -34,9 +35,11 @@ def build_durable_graph(service, saver):
                 service.record(run_id,revision,name,'dispatching',reserved)
 
             ctx.before_dispatch = reserve
+            boundary = begin(ctx)
             if name != 'finalize':
                 ctx.nodes.append(name)
             route = await action(ctx,state)
+            complete(ctx, name, route, boundary)
             output = data.capture(ctx,state)
             output.update(revision=revision+1,route=route)
             service.record(run_id,revision,name,'completed',output)

@@ -83,10 +83,12 @@ async def test_timeout_preserves_unknown_usage_and_deadline():
         paid = True
         async def respond(self, *args):
             await asyncio.sleep(1)
-    r = await run_investigation(demo_case(), Slow(), limits=Limits(seconds=.03, provider_seconds=.01))
+    # Leave time for fixed collection and recording before exercising the provider
+    # timeout. A 30ms whole-run deadline can expire before any provider dispatch.
+    r = await run_investigation(demo_case(), Slow(), limits=Limits(seconds=.5, provider_seconds=.01))
     assert r['usage']['unknown_usage_reservations']
     assert r['report']['status'] == 'error'
-    assert r['usage']['elapsed_ms'] < 300
+    assert r['usage']['elapsed_ms'] < 1000
 
 
 async def test_interleaved_runs_do_not_share_evidence_or_budgets():

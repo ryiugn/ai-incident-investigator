@@ -144,12 +144,22 @@ def create_app(archive=Path('archive'),public=Path('benchmark/public'),results=P
     async def get_run(run_id:str):
         if run_id not in jobs: raise HTTPException(404,'Unknown run')
         if investigations and jobs[run_id].get('workflow')=='adaptive' and jobs[run_id]['state']!='queued':
+            original_job, original_state = jobs[run_id], jobs[run_id]['state']
+            def unchanged():
+                return jobs[run_id] is original_job and jobs[run_id]['state'] == original_state
             try:
-                jobs[run_id].update(await investigations.inspect(run_id))
+                inspected = await investigations.inspect(run_id, active=True if original_state == 'running' else None)
+                # A worker can finish while inspect awaits the graph checkpoint.
+                # Do not overwrite its newer terminal/approval projection with an
+                # older in-flight snapshot (which would stop browser polling).
+                if unchanged():
+                    jobs[run_id].update(inspected)
             except KeyError:
+                if not unchanged(): return jobs[run_id]
                 jobs[run_id].update(resumable=False,recovery_message='Legacy archive has no durable checkpoint. Start a new investigation.')
                 if jobs[run_id]['state']!='finished': jobs[run_id].update(state='interrupted',pending_approval=None)
             except (ValueError,OSError,sqlite3.Error):
+                if not unchanged(): return jobs[run_id]
                 jobs[run_id].update(state='interrupted',resumable=False,pending_approval=None,
                     recovery_message='Checkpoint unavailable or incompatible. Restore the store/configuration or start a new investigation.')
         return jobs[run_id]

@@ -161,6 +161,8 @@ def test_unknown_dispatch_keeps_reservations_and_cannot_replay(tmp_path,mode):
     assert second.returncode == 0, second.stderr
     job = json.loads((tmp_path/'job.json').read_text())
     assert job['state'] == 'interrupted' and not job['resumable']
+    completed = [s['node'] for s in job['result']['execution_steps']]
+    assert ('triage' if mode == 'crash_model' else 'collect_evidence') not in completed
     assert 'Unknown external-call' in job['resume_error']
     usage = job['result']['usage']
     assert usage['model_requests'] == 1

@@ -23,12 +23,18 @@ test('human review saves an incomplete atomic claim and restores it after reload
 test('compare real fixed and adaptive runs from one frozen snapshot without a winner',async({page})=>{
   await page.goto(url);
   await page.getByLabel('Workflow',{exact:true}).selectOption('fixed');
+  const fixedResponse=page.waitForResponse(r=>r.url().endsWith('/api/runs')&&r.request().method()==='POST');
   await page.getByRole('button',{name:'Start investigation'}).click();
+  const fixedId=(await (await fixedResponse).json()).run_id;
   await expect(page.getByRole('heading',{name:'Observed failure condition'})).toBeVisible();
   await page.getByLabel('Workflow',{exact:true}).selectOption('adaptive');
+  const adaptiveResponse=page.waitForResponse(r=>r.url().endsWith('/api/runs')&&r.request().method()==='POST');
   await page.getByRole('button',{name:'Start investigation'}).click();
+  const adaptiveId=(await (await adaptiveResponse).json()).run_id;
   await expect(page.getByRole('heading',{name:'Observed failure condition'})).toBeVisible();
   await page.getByRole('button',{name:'Compare runs',exact:true}).click();
+  await page.getByLabel('Left run').selectOption(fixedId);
+  await page.getByLabel('Right run').selectOption(adaptiveId);
   await page.getByRole('button',{name:'Compare selected runs',exact:true}).click();
   await expect(page.getByText('Same frozen snapshot',{exact:true})).toBeVisible();
   await expect(page.getByText(/no benchmark correctness or winner inferred/)).toBeVisible();

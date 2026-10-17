@@ -10,8 +10,8 @@ clients, connections, keys and locks are rebuilt, not serialized.
 
 ```text
 validate_alert -> triage -> guard_action -> collect_evidence -> assess
-                              |                 ^                |
-                              |                 `----------------'
+                              ^                                  |
+                              `----------------------------------'
                               +-> human_approval -> collect or finalize
                               `-> finalize -> end
 ```
@@ -40,3 +40,27 @@ local store; it is not a distributed worker service.
 
 See `tests/test_checkpointing.py` for real temporary SQLite and subprocess crash,
 approval and concurrency tests. The tests use scripted providers or transport doubles.
+
+## Recorded playback
+
+Workflow extends the node-entry path with completed-boundary records from
+`execution.py`: sequence, node, outgoing route, before/after usage and evidence IDs,
+new tool events, model-request evidence IDs, report status and hypotheses. Decisions
+are identified as produced here or retained from an earlier step. These are observable
+outputs, not hidden model reasoning. Raw prompts, keys and evaluator labels are excluded.
+
+Standalone `graph.py` wraps nodes. Interactive `durable_graph.py` records only after
+a node returns, then journals the record with its output before the graph checkpoint.
+Journal replay reuses saved output without appending another step. Approval interrupts
+and unknown dispatch outcomes exit before recording completion. Fixed collection records
+returned checklist queries and finalization explicitly outside LangGraph.
+
+Older checkpoints default to an empty `execution_steps` list. Historical entry paths
+are never reconstructed into fictional outcomes. A completed boundary means the node
+returned, not that a tool succeeded or a diagnosis is correct. Errors, empty/partial
+coverage and invalid-argument feedback remain visible. Model input IDs distinguish
+supplied evidence from registered records omitted by the 16,000-character policy.
+
+Playback never executes nodes or approves queries. Highlights refer to the selected
+recorded boundary, not inferred live activity. Run changes reset playback and evidence.
+API polling preserves newer worker completion when it overlaps checkpoint inspection.

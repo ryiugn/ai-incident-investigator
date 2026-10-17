@@ -2,6 +2,48 @@ import time
 from fastapi.testclient import TestClient
 
 
+def test_poll_does_not_replace_newer_worker_completion(monkeypatch,tmp_path):
+    import asyncio
+    import threading
+    import investigator.api as api_module
+    from investigator.api import create_app
+    from investigator.checkpoint import Investigations
+    from investigator.provider import ScriptedProvider
+    entered, release = threading.Event(), threading.Event()
+    class Delayed(ScriptedProvider):
+        async def respond(self,*args):
+            entered.set()
+            while not release.is_set(): await asyncio.sleep(.01)
+            return await super().respond(*args)
+    original=Investigations.inspect
+    saved=threading.Event()
+    stale_returned=threading.Event()
+    original_save=api_module.save_run
+    def observe_save(path,value):
+        original_save(path,value)
+        if value.get('state')=='finished': saved.set()
+    monkeypatch.setattr(api_module,'save_run',observe_save)
+    async def overlapping(self,run_id,active=None):
+        snapshot=await original(self,run_id,active)
+        if active is not False and snapshot['state']=='running':
+            release.set()
+            # Hold an old poll response until the real worker publishes completion.
+            for _ in range(1000):
+                if saved.is_set():
+                    stale_returned.set()
+                    return snapshot
+                await asyncio.sleep(.01)
+        return snapshot
+    monkeypatch.setattr(Investigations,'inspect',overlapping)
+    with TestClient(create_app(archive=tmp_path,provider=Delayed())) as client:
+        run_id=client.post('/api/runs',json={'case_id':'demo','workflow':'adaptive'}).json()['run_id']
+        assert entered.wait(5)
+        result=client.get('/api/runs/'+run_id).json()
+        assert stale_returned.is_set()
+        assert result['state']=='finished'
+        assert result['result']['report']
+
+
 def test_start_poll_evidence_and_reject_unknown_ids(tmp_path):
     from investigator.api import create_app
     with TestClient(create_app(archive=tmp_path)) as client:

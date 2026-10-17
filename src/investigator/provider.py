@@ -193,6 +193,48 @@ class AnthropicProvider:
         # Conservative UTF-8 byte bound plus protocol overhead; no extra API call.
         return len((SYSTEM + canonical(context) + canonical(provider_schema(contract))).encode()) + 1024
 
+    def record_error(self, error):
+        """Keep only allowlisted diagnostics, never exception text/headers/body."""
+        if not self.ledger_path:
+            return
+        import json
+        from datetime import datetime, timezone
+        from .checkpoint import writer_lock
+        status = getattr(error, 'status_code', None)
+        status = status if type(status) is int and 100 <= status <= 599 else None
+        category = {400:'request_rejected',401:'authentication',402:'billing',403:'permission',
+                    404:'model_or_endpoint_unavailable',429:'rate_or_account_limit'}.get(status,
+                    'provider_server' if status and status >= 500 else 'transport_or_client')
+        body = getattr(error, 'body', None)
+        detail = body.get('error', body) if isinstance(body, dict) else None
+        message = detail.get('message', '') if isinstance(detail, dict) else ''
+        message = message.lower() if isinstance(message, str) else ''
+        # Inspect in memory; only fixed labels may leave this classifier.
+        reason = 'unclassified'
+        for label, matches in (
+            ('insufficient_credit', 'credit balance' in message),
+            ('structured_output_schema', 'schema' in message),
+            ('structured_output_parameter', any(x in message for x in ('output_config', 'output_format'))),
+            ('model_unavailable', 'model' in message and any(x in message for x in ('not found', 'unsupported', 'unavailable'))),
+            ('token_parameters', 'max_tokens' in message),
+            ('account_configuration', any(x in message for x in ('organization', 'billing'))),
+            ('credential_header', any(x in message for x in ('api key', 'x-api-key'))),
+        ):
+            if matches:
+                reason = label
+                break
+        record = dict(category=category,reason=reason,http_status=status,model=self.name,
+                      observed_at=datetime.now(timezone.utc).isoformat(),
+                      usage_status='unknown; reservation retained')
+        try:
+            with writer_lock(self.ledger_path):
+                target=self.ledger_path.with_suffix('.error.json')
+                temporary=target.with_suffix('.tmp')
+                temporary.write_text(json.dumps(record,indent=2),encoding='utf-8')
+                temporary.replace(target)
+        except (OSError,ValueError):
+            pass  # Diagnostic failure must not obscure the original dispatch error.
+
     async def respond(self, context, contract, max_tokens, timeout):
         import json
         from .evidence import canonical
@@ -201,9 +243,13 @@ class AnthropicProvider:
         async with self.lock:
             self.adjust_spend(reservation,reserve=True)
         # Keep full reservation if timeout, cancellation or other uncertain usage.
-        response = await self.client.messages.create(model=self.name, max_tokens=max_tokens,
-            timeout=timeout, system=SYSTEM, messages=[{'role':'user', 'content':canonical(context)}],
-            output_config={'format':{'type':'json_schema', 'schema':provider_schema(contract)}})
+        try:
+            response = await self.client.messages.create(model=self.name, max_tokens=max_tokens,
+                timeout=timeout, system=SYSTEM, messages=[{'role':'user', 'content':canonical(context)}],
+                output_config={'format':{'type':'json_schema', 'schema':provider_schema(contract)}})
+        except Exception as error:
+            self.record_error(error)
+            raise
         usage = response.usage
         tokens = dict(input_tokens=usage.input_tokens, output_tokens=usage.output_tokens,
                       cache_tokens=(getattr(usage, 'cache_read_input_tokens', 0) or 0) + (getattr(usage, 'cache_creation_input_tokens', 0) or 0))

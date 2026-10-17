@@ -2,6 +2,7 @@ from typing import TypedDict
 from langgraph.graph import StateGraph, START, END
 from .contracts import Decision
 from .budgets import Exhausted
+from .execution import begin, complete
 
 
 class State(TypedDict):
@@ -54,8 +55,15 @@ def build_graph(ctx):
         return {'route':'end'}
 
     graph = StateGraph(State)
+    def recorded(node):
+        async def execute(state):
+            boundary = begin(ctx)
+            output = await node(state)
+            complete(ctx, node.__name__, output['route'], boundary)
+            return output
+        return execute
     for node in (validate_alert, triage, guard_action, collect_evidence, assess, finalize):
-        graph.add_node(node.__name__, node)
+        graph.add_node(node.__name__, recorded(node))
     graph.add_edge(START, 'validate_alert')
     graph.add_edge('validate_alert', 'triage')
     for name in ('triage', 'guard_action', 'collect_evidence', 'assess'):
