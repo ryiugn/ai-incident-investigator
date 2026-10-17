@@ -26,7 +26,7 @@ tradeoffs. It is not a production incident-response service.
 It suggests next checks; it does not execute remediation. Citation integrity is checked
 in code; whether a source actually supports a claim requires separate human review.
 
-See the [interview walkthrough](docs/interview.md), [demo guide](docs/demo.md), and
+See the [demo guide](docs/demo.md) and
 [verification record](docs/verification.md) for a reproducible portfolio demonstration.
 
 ## Quick start

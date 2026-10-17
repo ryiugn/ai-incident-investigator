@@ -60,8 +60,6 @@ endpoint or uncertain-outcome error; do not assume retries are free. Retain fail
 This verifies provider integration only. It is neither a development benchmark nor a
 held-out experiment. For a timed interview, keep the unpaid server available as fallback.
 
-See [interview.md](interview.md) for the timed walkthrough and explanation prompts.
-
 ## Other controls
 
 Recent runs reopens saved investigations. Five Handcrafted stress fixtures illustrate
